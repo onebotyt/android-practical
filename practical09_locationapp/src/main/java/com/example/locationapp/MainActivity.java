@@ -1,59 +1,46 @@
 package com.example.locationapp;
 
-import android.os.Bundle;
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import com.google.android.gms.maps.*;
-import com.google.android.gms.maps.GoogleMap;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
-public class MainActivity extends AppCompatActivity
-        implements OnMapReadyCallback {
-
-    GoogleMap map;
+public class MainActivity extends AppCompatActivity {
+    MapView map;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Configuration.getInstance().setUserAgentValue(getPackageName());
         setContentView(R.layout.activity_main);
 
-        SupportMapFragment f = (SupportMapFragment)
-                getSupportFragmentManager().findFragmentById(R.id.map);
-        if (f != null) {
-            f.getMapAsync(this);
+        map = findViewById(R.id.map);
+        map.setMultiTouchControls(true);
+        map.getController().setZoom(16.0);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
         }
+
+        MyLocationNewOverlay loc = new MyLocationNewOverlay(new GpsMyLocationProvider(this), map);
+        loc.enableMyLocation();
+        map.getOverlays().add(loc);
     }
 
     @Override
-    public void onMapReady(GoogleMap m) {
-        map = m;
-        map.getUiSettings().setZoomControlsEnabled(true);
-        map.getUiSettings().setMyLocationButtonEnabled(true);
-
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            map.setMyLocationEnabled(true);
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                    }, 1);
-        }
+    protected void onResume() {
+        super.onResume();
+        if (map != null) map.onResume();
     }
 
     @Override
-    public void onRequestPermissionsResult(
-            int c, String[] p, int[] g) {
-        super.onRequestPermissionsResult(c, p, g);
-        if (c == 1 && g.length > 0 &&
-                g[0] == PackageManager.PERMISSION_GRANTED) {
-            if (map != null) {
-                onMapReady(map);
-            }
-        }
+    protected void onPause() {
+        super.onPause();
+        if (map != null) map.onPause();
     }
 }
