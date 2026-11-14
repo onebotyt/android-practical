@@ -2,6 +2,8 @@ package com.example.locationapp;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
@@ -31,7 +33,9 @@ public class MainActivity extends AppCompatActivity {
         map.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    view.loadUrl(url);
+                }
                 return true;
             }
         });
@@ -50,7 +54,33 @@ public class MainActivity extends AppCompatActivity {
             }, 1);
         }
 
-        map.loadUrl("https://www.google.com/maps");
+        loadMap();
+    }
+
+    void loadMap() {
+        Location loc = null;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+            if (lm != null) {
+                loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (loc == null) loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+        }
+
+        String url = (loc != null)
+                ? "https://maps.google.com/?q=" + loc.getLatitude() + "," + loc.getLongitude() + "&output=embed"
+                : "https://maps.google.com/?output=embed";
+
+        map.loadUrl(url);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int c, String[] p, int[] g) {
+        super.onRequestPermissionsResult(c, p, g);
+        if (c == 1 && g.length > 0 && g[0] == PackageManager.PERMISSION_GRANTED) {
+            loadMap();
+        }
     }
 
     @Override
