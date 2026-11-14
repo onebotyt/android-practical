@@ -32,17 +32,8 @@ public class MainActivity extends AppCompatActivity {
 
         map.setWebViewClient(new WebViewClient() {
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    return false;
-                }
-                return true;
-            }
-
-            @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.startsWith("http://") || url.startsWith("https://")) {
+                if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
                     return false;
                 }
                 return true;
