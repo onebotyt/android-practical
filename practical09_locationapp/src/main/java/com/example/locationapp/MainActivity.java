@@ -1,37 +1,47 @@
 package com.example.locationapp;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.webkit.GeolocationPermissions;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
-import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
-    MapView map;
+    WebView map;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-
-        Context ctx = getApplicationContext();
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-        Configuration.getInstance().setUserAgentValue("Mozilla/5.0 (Android; Mobile) AndroidPractical/1.0");
-        Configuration.getInstance().setOsmdroidTileCache(new File(getCacheDir(), "map_tiles_clean"));
-
         setContentView(R.layout.activity_main);
 
-        map = findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
-        map.setMultiTouchControls(true);
-        map.getController().setZoom(16.0);
+        map = findViewById(R.id.mapView);
+        WebSettings s = map.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setDatabaseEnabled(true);
+        s.setGeolocationEnabled(true);
+        s.setBuiltInZoomControls(true);
+        s.setDisplayZoomControls(false);
+
+        map.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                view.loadUrl(url);
+                return true;
+            }
+        });
+
+        map.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                callback.invoke(origin, true, false);
+            }
+        });
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{
@@ -40,20 +50,15 @@ public class MainActivity extends AppCompatActivity {
             }, 1);
         }
 
-        MyLocationNewOverlay loc = new MyLocationNewOverlay(new GpsMyLocationProvider(this), map);
-        loc.enableMyLocation();
-        map.getOverlays().add(loc);
+        map.loadUrl("https://www.google.com/maps");
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (map != null) map.onResume();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (map != null) map.onPause();
+    public void onBackPressed() {
+        if (map != null && map.canGoBack()) {
+            map.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
