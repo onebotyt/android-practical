@@ -1,0 +1,85 @@
+name: Build and Release Android Practicals APKs
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build All Practicals
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.2
+
+      - name: Build Debug APKs for All Practicals
+        run: |
+          gradle assembleDebug --stacktrace
+
+      - name: Organize APK Files
+        run: |
+          mkdir -p dist-apks
+          cp practical03_calculator/build/outputs/apk/debug/*.apk dist-apks/Practical-03-Calculator.apk
+          cp practical04_menuapp/build/outputs/apk/debug/*.apk dist-apks/Practical-04-MenuNavigation.apk
+          cp practical05_storageapp/build/outputs/apk/debug/*.apk dist-apks/Practical-05-InternalStorage.apk
+          cp practical06_todoapp/build/outputs/apk/debug/*.apk dist-apks/Practical-06-SqliteTodoList.apk
+          cp practical07_emailapp/build/outputs/apk/debug/*.apk dist-apks/Practical-07-EmailIntent.apk
+          cp practical08_animationapp/build/outputs/apk/debug/*.apk dist-apks/Practical-08-Animation.apk
+          cp practical09_locationapp/build/outputs/apk/debug/*.apk dist-apks/Practical-09-GoogleMaps.apk
+          cp practical10_cameraapp/build/outputs/apk/debug/*.apk dist-apks/Practical-10-Camera.apk
+          echo "All APKs generated successfully:"
+          ls -lh dist-apks/
+
+      - name: Upload APKs as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: All-Practicals-APKs
+          path: dist-apks/*.apk
+
+      - name: Publish GitHub Release with Individual APKs
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.0.0"
+          gh release delete "$TAG" -y 2>/dev/null || true
+          git tag -d "$TAG" 2>/dev/null || true
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+
+          gh release create "$TAG" dist-apks/*.apk \
+            --title "Android Practicals (3 to 10) APKs" \
+            --notes "## 📱 Android Application Development Lab Practicals (3 to 10)
+
+          **Subject Code:** 055004  
+          **Technology:** Android Studio • Java • XML (Views)
+
+          Download the individual APK files below directly onto your Android device to install, test, and capture screenshots for your lab record book!
+
+          ### 📦 Downloadable Practical APKs:
+          - 🧮 **Practical-03-Calculator.apk**: Simple Calculator (Addition, Subtraction, Multiplication, Division)
+          - 📑 **Practical-04-MenuNavigation.apk**: Options Menu & Screen Navigation using Intents
+          - 💾 **Practical-05-InternalStorage.apk**: Internal Storage Read/Write (\`data.txt\`)
+          - 📝 **Practical-06-SqliteTodoList.apk**: SQLite Database To-Do List (Add, Display, Long-press delete)
+          - ✉️ **Practical-07-EmailIntent.apk**: Connect with Email App via Implicit Intent (\`ACTION_SENDTO\`)
+          - 🔄 **Practical-08-Animation.apk**: Graphics & 360° Rotation Animation
+          - 🗺️ **Practical-09-GoogleMaps.apk**: Google Maps SDK & Current Location Indicator
+          - 📷 **Practical-10-Camera.apk**: Device Camera Photo Capture via Intent"
