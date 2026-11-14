@@ -32,9 +32,18 @@ public class MainActivity extends AppCompatActivity {
 
         map.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith("http://") || url.startsWith("https://")) {
-                    view.loadUrl(url);
+                    return false;
                 }
                 return true;
             }
@@ -68,11 +77,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        String url = (loc != null)
+        String src = (loc != null)
                 ? "https://maps.google.com/?q=" + loc.getLatitude() + "," + loc.getLongitude() + "&output=embed"
                 : "https://maps.google.com/?output=embed";
 
-        map.loadUrl(url);
+        String html = "<!DOCTYPE html><html><head>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>" +
+                "<style>html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }" +
+                "iframe { width:100%; height:100%; border:none; }</style></head><body>" +
+                "<iframe src='" + src + "' allowfullscreen></iframe></body></html>";
+
+        map.loadDataWithBaseURL("https://maps.google.com", html, "text/html", "UTF-8", null);
     }
 
     @Override
